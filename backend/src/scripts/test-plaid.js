@@ -17,6 +17,19 @@ try {
 
   console.log("Conexão com Plaid Sandbox funcionando!");
   console.log(`Contas encontradas: ${data.accounts.length}`);
+
+  console.table(
+    data.accounts.map((account) => ({
+      conta: account.name,
+      tipo: account.type,
+      moeda:
+        account.balances.iso_currency_code ??
+        account.balances.unofficial_currency_code ??
+        "Não informada",
+      saldo_atual: account.balances.current,
+      saldo_disponivel: account.balances.available,
+    }))
+  );
 } catch (error) {
   console.error("Falha ao testar a Plaid:", {
     code: error.response?.data?.error_code ?? "CONNECTION_ERROR",
