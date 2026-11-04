@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { summarizeSpending } from "../services/spending.js";
 import {
   initializeSandbox,
   getSandboxAccounts,
@@ -64,6 +65,21 @@ sandboxRouter.get("/transactions", async (req, res) => {
       source: "Plaid Sandbox",
       fictitious: true,
       ...result,
+    });
+  } catch (error) {
+    handleError(error, res);
+  }
+});
+sandboxRouter.get("/spending", async (req, res) => {
+  try {
+    const { period, transactions } = await getSandboxTransactions();
+
+    res.json({
+      source: "Plaid Sandbox",
+      fictitious: true,
+      period,
+      description: "Saídas brutas por categoria, sem descontar estornos.",
+      categories: summarizeSpending(transactions),
     });
   } catch (error) {
     handleError(error, res);
