@@ -1,5 +1,6 @@
 import { Products } from "plaid";
 import { plaidClient } from "../config/plaid.js";
+import { summarizeSpending } from "../services/spending.js";
 
 async function getTransactionsPage(request) {
   for (let attempt = 1; attempt <= 6; attempt++) {
@@ -98,6 +99,18 @@ try {
       pendente: transaction.pending,
     }))
   );
+
+ const spending = summarizeSpending(transactions);
+
+  console.log(
+    "Saídas brutas por categoria — sem descontar estornos."
+  );
+
+  if (spending.length === 0) {
+    console.log("Nenhuma saída elegível no período.");
+  } else {
+    console.table(spending);
+  } 
 } catch (error) {
   console.error("Falha ao testar a Plaid:", {
     code:
