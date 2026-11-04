@@ -1,122 +1,149 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { useState } from "react";
+import {
+  Sparkles,
+  MessageCircle,
+  Wallet,
+  ChartNoAxesCombined,
+  ArrowLeftRight,
+  ArrowUp,
+} from "lucide-react";
+import "./App.css";
 
-function App() {
-  const [count, setCount] = useState(0)
+const suggestions = [
+  { label: "Meu saldo", icon: Wallet },
+  { label: "Gastos por categoria", icon: ChartNoAxesCombined },
+  { label: "Últimas transações", icon: ArrowLeftRight },
+];
+
+export default function App() {
+  const [draft, setDraft] = useState("");
+  const [messages, setMessages] = useState([]);
+
+  function sendMessage(text) {
+    const content = text.trim();
+    if (!content) return;
+
+    setMessages((previous) => [
+      ...previous,
+      { role: "user", content },
+      {
+        role: "assistant",
+        content:
+          "A tela está em construção. Vamos conectar as consultas ao backend na próxima etapa.",
+      },
+    ]);
+
+    setDraft("");
+  }
+
+  function handleSubmit(event) {
+    event.preventDefault();
+    sendMessage(draft);
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
+    <div className="app-shell">
+      <aside className="sidebar">
+        <a className="brand" href="/" aria-label="Expert Financeiro">
+          <span className="brand-mark">
+            <Sparkles size={22} aria-hidden="true" />
+          </span>
+          expert<span className="brand-dot">.</span>
+        </a>
+
         <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
+          className="new-conversation"
+          onClick={() => {
+            setMessages([]);
+            setDraft("");
+          }}
         >
-          Count is {count}
+          <MessageCircle size={19} aria-hidden="true" />
+          Nova conversa
         </button>
-      </section>
 
-      <div className="ticks"></div>
+        <section className="account-summary">
+          <h2>Suas contas</h2>
+          <p>Os saldos aparecerão aqui após conectarmos o backend.</p>
+        </section>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
+        <div className="sidebar-footer">
+          <span className="status-dot" />
+          Interface em desenvolvimento
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      </aside>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+      <main className="main-panel">
+        <header className="topbar">
+          <div>
+            <strong>Seu assistente financeiro</strong>
+            <p>Clareza para entender seu dinheiro</p>
+          </div>
+          <span className="environment-badge">Modo demonstração</span>
+        </header>
+
+        <div className="chat-content">
+          <section className="welcome">
+            <p className="eyebrow">Finanças em uma conversa</p>
+            <h1>Vamos entender suas finanças?</h1>
+            <p className="welcome-description">
+              Consulte suas contas, veja suas transações e descubra onde
+              estão suas maiores saídas.
+            </p>
+          </section>
+
+          <div className="suggestions">
+            {suggestions.map(({ label, icon: Icon }) => (
+              <button key={label} onClick={() => sendMessage(label)}>
+                <Icon size={18} aria-hidden="true" />
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <section
+            className="messages"
+            aria-label="Conversa com o Expert"
+            aria-live="polite"
+            aria-relevant="additions"
+          >
+            {messages.map((message, index) => (
+              <article
+                key={index}
+                className={`message message-${message.role}`}
+              >
+                <span className="message-author">
+                  {message.role === "user" ? "Você" : "Expert"}
+                </span>
+                <p>{message.content}</p>
+              </article>
+            ))}
+          </section>
+        </div>
+
+        <footer className="composer">
+          <form className="message-form" onSubmit={handleSubmit}>
+            <label className="sr-only" htmlFor="message">
+              Sua pergunta
+            </label>
+            <input
+              id="message"
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              placeholder="Pergunte sobre seus dados fictícios…"
+              autoComplete="off"
+            />
+            <button type="submit" disabled={!draft.trim()}>
+              <span>Enviar</span>
+              <ArrowUp size={19} aria-hidden="true" />
+            </button>
+          </form>
+
+          <p className="demo-notice">
+            Dados fictícios. Nenhuma movimentação financeira real.
+          </p>
+        </footer>
+      </main>
+    </div>
+  );
 }
-
-export default App
