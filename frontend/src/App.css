@@ -404,3 +404,64 @@
 .message-assistant:has(.spending-summary) {
   width: min(100%, 580px);
 }
+
+.transactions-summary {
+  min-width: 0;
+}
+
+.transactions-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  margin-top: 18px;
+}
+
+.transactions-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  text-align: left;
+}
+
+.transactions-table caption {
+  padding-bottom: 12px;
+  color: #607086;
+  text-align: left;
+}
+
+.transactions-table th,
+.transactions-table td {
+  padding: 12px 10px;
+  border-bottom: 1px solid #e4eaf2;
+  vertical-align: top;
+}
+
+.transactions-table th {
+  color: #607086;
+  font-weight: 600;
+}
+
+.transactions-table td:first-child {
+  white-space: nowrap;
+}
+
+.transactions-table td:nth-child(2) {
+  min-width: 150px;
+  overflow-wrap: anywhere;
+}
+
+.transaction-value {
+  white-space: nowrap;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.pending-label {
+  display: block;
+  margin-top: 4px;
+  color: #846000;
+  font-size: 11px;
+}
+
+.message-assistant:has(.transactions-summary) {
+  width: min(100%, 700px);
+}

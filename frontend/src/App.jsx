@@ -1,5 +1,4 @@
 import { useState } from "react";
-import "./App.css";
 import {
   Sparkles,
   MessageCircle,
@@ -13,9 +12,11 @@ import {
   initializeSandbox,
   getAccounts,
   getSpending,
+  getTransactions,
 } from "./services/api.js";
 
 import SpendingSummary from "./components/SpendingSummary.jsx";
+import TransactionsTable from "./components/TransactionsTable.jsx";
 import "./App.css";
 
 const suggestions = [
@@ -85,16 +86,17 @@ export default function App() {
       .replace(/[\u0300-\u036f]/g, "")
       .toLowerCase();
 
+    const isTransactions = /transac|ultimas compras/.test(normalized);
     const isSpending = /gast|categoria|saida/.test(normalized);
     const isBalance = /saldo|contas?/.test(normalized);
 
-    if (!isSpending && !isBalance) {
+    if (!isTransactions && !isSpending && !isBalance) {
       setMessages((previous) => [
         ...previous,
         {
           role: "assistant",
           content:
-            "Posso consultar saldos e gastos por categoria. A consulta de transações será conectada a seguir. Esta versão ainda não usa IA.",
+            "Posso consultar saldos, gastos por categoria e últimas transações. Use uma das sugestões para começar. Esta versão ainda não usa IA.",
         },
       ]);
       return;
@@ -105,17 +107,20 @@ export default function App() {
     try {
       await initializeSandbox();
 
-      if (isSpending) {
-        const result = await getSpending();
+      let reply;
 
-        setMessages((previous) => [
-          ...previous,
-          {
-            role: "assistant",
-            type: "spending",
-            data: result,
-          },
-        ]);
+      if (isTransactions) {
+        reply = {
+          role: "assistant",
+          type: "transactions",
+          data: await getTransactions(),
+        };
+      } else if (isSpending) {
+        reply = {
+          role: "assistant",
+          type: "spending",
+          data: await getSpending(),
+        };
       } else {
         const result = await getAccounts();
 
@@ -129,16 +134,15 @@ export default function App() {
           )
           .join("\n\n");
 
-        setMessages((previous) => [
-          ...previous,
-          {
-            role: "assistant",
-            content: result.accounts.length
-              ? `Veja os saldos retornados:\n\n${summary}\n\nCartões e empréstimos representam dívida. Investimentos não são tratados como saldo disponível.\n\nFonte: Plaid Sandbox — dados fictícios.`
-              : "Nenhuma conta encontrada no Plaid Sandbox.",
-          },
-        ]);
+        reply = {
+          role: "assistant",
+          content: result.accounts.length
+            ? `Veja os saldos retornados:\n\n${summary}\n\nCartões e empréstimos representam dívida. Investimentos não são tratados como saldo disponível.\n\nFonte: Plaid Sandbox — dados fictícios.`
+            : "Nenhuma conta encontrada no Plaid Sandbox.",
+        };
       }
+
+      setMessages((previous) => [...previous, reply]);
     } catch {
       setMessages((previous) => [
         ...previous,
@@ -170,7 +174,6 @@ export default function App() {
           <span className="brand-mark">
             <Sparkles size={22} aria-hidden="true" />
           </span>
-
           expert<span className="brand-dot">.</span>
         </a>
 
@@ -213,7 +216,6 @@ export default function App() {
             <strong>Seu assistente financeiro</strong>
             <p>Clareza para entender seu dinheiro</p>
           </div>
-
           <span className="environment-badge">
             Modo demonstração
           </span>
@@ -222,9 +224,7 @@ export default function App() {
         <div className="chat-content">
           <section className="welcome">
             <p className="eyebrow">Finanças em uma conversa</p>
-
             <h1>Vamos entender suas finanças?</h1>
-
             <p className="welcome-description">
               Consulte suas contas, veja suas transações e descubra
               onde estão suas maiores saídas.
@@ -263,6 +263,8 @@ export default function App() {
 
                 {message.type === "spending" ? (
                   <SpendingSummary data={message.data} />
+                ) : message.type === "transactions" ? (
+                  <TransactionsTable data={message.data} />
                 ) : (
                   <p>{message.content}</p>
                 )}
