@@ -35,7 +35,9 @@ async function createSandboxItem() {
 
 export async function getSandboxAccounts() {
   if (!accessToken) {
-    const error = new Error("Inicialize o Sandbox antes de consultar contas.");
+    const error = new Error(
+      "Inicialize o Sandbox antes de consultar contas."
+    );
     error.code = "SANDBOX_NOT_INITIALIZED";
     throw error;
   }
@@ -51,11 +53,13 @@ export async function getSandboxAccounts() {
     subtype: account.subtype,
     balances: account.balances,
   }));
-  
 }
+
 export async function getSandboxTransactions() {
   if (!accessToken) {
-    const error = new Error("Inicialize o Sandbox antes de consultar transações.");
+    const error = new Error(
+      "Inicialize o Sandbox antes de consultar transações."
+    );
     error.code = "SANDBOX_NOT_INITIALIZED";
     throw error;
   }
@@ -72,17 +76,22 @@ export async function getSandboxTransactions() {
   let total = 0;
 
   do {
-    const { data } = await plaidClient.transactionsGet({
+    const { data } = await requestTransactionsWithRetry({
       access_token: accessToken,
       start_date: start,
       end_date: end,
-      options: { count: 100, offset },
+      options: {
+        count: 100,
+        offset,
+      },
     });
 
     total = data.total_transactions;
 
     if (data.transactions.length === 0 && offset < total) {
-      throw new Error("A consulta retornou uma página vazia inesperada.");
+      throw new Error(
+        "A consulta retornou uma página vazia inesperada."
+      );
     }
 
     transactions.push(...data.transactions);
@@ -94,4 +103,26 @@ export async function getSandboxTransactions() {
     total,
     transactions,
   };
+}
+
+async function requestTransactionsWithRetry(request) {
+  const maxAttempts = 6;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await plaidClient.transactionsGet(request);
+    } catch (error) {
+      const code = error.response?.data?.error_code;
+
+      if (code !== "PRODUCT_NOT_READY" || attempt === maxAttempts) {
+        throw error;
+      }
+
+      console.log(
+        `Preparando transações: tentativa ${attempt}/${maxAttempts}.`
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
+  }
 }
