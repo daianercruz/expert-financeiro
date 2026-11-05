@@ -421,6 +421,41 @@ As etapas foram verificadas durante o desenvolvimento com:
 Os prints ainda precisam ser organizados no repositório.
 Nenhuma evidência deve expor credenciais ou tokens.
 
+
+## Evidências
+
+### Tela principal
+
+Interface inicial com sugestões de perguntas e aviso de dados fictícios.
+
+![Tela principal](docs/screenshots/home.png)
+
+### Contas e saldos
+
+Saldos apresentados em cartões, distinguindo valores disponíveis,
+investimentos e dívidas.
+
+![Contas e saldos](docs/screenshots/accounts.png)
+
+### Gastos por categoria
+
+Resumo das saídas brutas por categoria, com valores, período e fonte.
+
+![Gastos por categoria](docs/screenshots/spending.png)
+
+### Últimas transações
+
+Tabela das transações recentes, com datas, descrições, entradas e saídas.
+
+![Últimas transações](docs/screenshots/transactions.png)
+
+### Conversa com o Gemini
+
+Resposta em linguagem natural elaborada pelo Gemini com os dados
+fictícios da Plaid Sandbox fornecidos pelo backend.
+
+![Conversa com o Gemini](docs/screenshots/chat-gemini.png)
+
 ## Referências
 
 - [Documentação da Plaid](https://plaid.com/docs/)
