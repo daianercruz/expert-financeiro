@@ -1,4 +1,5 @@
 import { useState } from "react";
+import "./App.css";
 import {
   Sparkles,
   MessageCircle,
@@ -7,7 +8,14 @@ import {
   ArrowLeftRight,
   ArrowUp,
 } from "lucide-react";
-import { initializeSandbox, getAccounts } from "./services/api";
+
+import {
+  initializeSandbox,
+  getAccounts,
+  getSpending,
+} from "./services/api.js";
+
+import SpendingSummary from "./components/SpendingSummary.jsx";
 import "./App.css";
 
 const suggestions = [
@@ -77,13 +85,16 @@ export default function App() {
       .replace(/[\u0300-\u036f]/g, "")
       .toLowerCase();
 
-    if (!/saldo|contas?/.test(normalized)) {
+    const isSpending = /gast|categoria|saida/.test(normalized);
+    const isBalance = /saldo|contas?/.test(normalized);
+
+    if (!isSpending && !isBalance) {
       setMessages((previous) => [
         ...previous,
         {
           role: "assistant",
           content:
-            "Por enquanto, consigo consultar seus saldos. As consultas de categorias e transações serão conectadas a seguir. Esta versão ainda não usa IA.",
+            "Posso consultar saldos e gastos por categoria. A consulta de transações será conectada a seguir. Esta versão ainda não usa IA.",
         },
       ]);
       return;
@@ -93,34 +104,48 @@ export default function App() {
 
     try {
       await initializeSandbox();
-      const result = await getAccounts();
 
-      setAccounts(result.accounts);
-      setAccountsLoaded(true);
+      if (isSpending) {
+        const result = await getSpending();
 
-      const summary = result.accounts
-        .map(
-          (account) =>
-            `${account.name}\n${describeAccount(account)}`
-        )
-        .join("\n\n");
+        setMessages((previous) => [
+          ...previous,
+          {
+            role: "assistant",
+            type: "spending",
+            data: result,
+          },
+        ]);
+      } else {
+        const result = await getAccounts();
 
-      setMessages((previous) => [
-        ...previous,
-        {
-          role: "assistant",
-          content: result.accounts.length
-            ? `Veja os saldos retornados:\n\n${summary}\n\nCartões e empréstimos representam dívida. Investimentos não são tratados como saldo disponível.\n\nFonte: Plaid Sandbox — dados fictícios.`
-            : "Nenhuma conta encontrada no Plaid Sandbox.",
-        },
-      ]);
+        setAccounts(result.accounts);
+        setAccountsLoaded(true);
+
+        const summary = result.accounts
+          .map(
+            (account) =>
+              `${account.name}\n${describeAccount(account)}`
+          )
+          .join("\n\n");
+
+        setMessages((previous) => [
+          ...previous,
+          {
+            role: "assistant",
+            content: result.accounts.length
+              ? `Veja os saldos retornados:\n\n${summary}\n\nCartões e empréstimos representam dívida. Investimentos não são tratados como saldo disponível.\n\nFonte: Plaid Sandbox — dados fictícios.`
+              : "Nenhuma conta encontrada no Plaid Sandbox.",
+          },
+        ]);
+      }
     } catch {
       setMessages((previous) => [
         ...previous,
         {
           role: "assistant",
           content:
-            "Não consegui consultar as contas. Confira se o backend está rodando e tente novamente em Meu saldo.",
+            "Não consegui concluir a consulta. Confira se o backend está rodando. Se acabou de inicializar o Sandbox, aguarde alguns segundos e tente novamente.",
         },
       ]);
     } finally {
@@ -133,6 +158,11 @@ export default function App() {
     sendMessage(draft);
   }
 
+  function clearConversation() {
+    setMessages([]);
+    setDraft("");
+  }
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -140,16 +170,15 @@ export default function App() {
           <span className="brand-mark">
             <Sparkles size={22} aria-hidden="true" />
           </span>
+
           expert<span className="brand-dot">.</span>
         </a>
 
         <button
+          type="button"
           className="new-conversation"
           disabled={loading}
-          onClick={() => {
-            setMessages([]);
-            setDraft("");
-          }}
+          onClick={clearConversation}
         >
           <MessageCircle size={19} aria-hidden="true" />
           Nova conversa
@@ -184,6 +213,7 @@ export default function App() {
             <strong>Seu assistente financeiro</strong>
             <p>Clareza para entender seu dinheiro</p>
           </div>
+
           <span className="environment-badge">
             Modo demonstração
           </span>
@@ -192,7 +222,9 @@ export default function App() {
         <div className="chat-content">
           <section className="welcome">
             <p className="eyebrow">Finanças em uma conversa</p>
+
             <h1>Vamos entender suas finanças?</h1>
+
             <p className="welcome-description">
               Consulte suas contas, veja suas transações e descubra
               onde estão suas maiores saídas.
@@ -203,6 +235,7 @@ export default function App() {
             {suggestions.map(({ label, icon: Icon }) => (
               <button
                 key={label}
+                type="button"
                 disabled={loading}
                 onClick={() => sendMessage(label)}
               >
@@ -227,7 +260,12 @@ export default function App() {
                 <span className="message-author">
                   {message.role === "user" ? "Você" : "Expert"}
                 </span>
-                <p>{message.content}</p>
+
+                {message.type === "spending" ? (
+                  <SpendingSummary data={message.data} />
+                ) : (
+                  <p>{message.content}</p>
+                )}
               </article>
             ))}
 
@@ -242,6 +280,7 @@ export default function App() {
             <label className="sr-only" htmlFor="message">
               Sua pergunta
             </label>
+
             <input
               id="message"
               value={draft}
@@ -250,6 +289,7 @@ export default function App() {
               autoComplete="off"
               disabled={loading}
             />
+
             <button
               type="submit"
               disabled={loading || !draft.trim()}
