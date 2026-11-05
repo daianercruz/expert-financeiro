@@ -465,3 +465,52 @@
 .message-assistant:has(.transactions-summary) {
   width: min(100%, 700px);
 }
+
+.accounts-summary {
+  min-width: 0;
+}
+
+.accounts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.account-card {
+  padding: 16px;
+  border: 1px solid #e4eaf2;
+  border-radius: 12px;
+  background: #f8fafc;
+  overflow-wrap: anywhere;
+}
+
+.account-card h3 {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.account-card-label {
+  display: block;
+  color: #607086;
+  font-size: 12px;
+}
+
+.account-card-value {
+  display: block;
+  margin-top: 6px;
+  font-size: 20px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.message-assistant:has(.accounts-summary) {
+  width: min(100%, 700px);
+}
+
+@media (max-width: 600px) {
+  .accounts-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -17,6 +17,7 @@ import {
 
 import SpendingSummary from "./components/SpendingSummary.jsx";
 import TransactionsTable from "./components/TransactionsTable.jsx";
+import AccountsSummary from "./components/AccountsSummary.jsx";
 import "./App.css";
 
 const suggestions = [
@@ -144,11 +145,10 @@ export default function App() {
           )
           .join("\n\n");
 
-        reply = {
+         reply = {
           role: "assistant",
-          content: result.accounts.length
-            ? `Veja os saldos retornados:\n\n${summary}\n\nCartões e empréstimos representam dívida. Investimentos não são tratados como saldo disponível.\n\nFonte: Plaid Sandbox — dados fictícios.`
-            : "Nenhuma conta encontrada no Plaid Sandbox.",
+          type: "accounts",
+          accounts: result.accounts,
         };
       }
 
@@ -271,12 +271,14 @@ export default function App() {
                   {message.role === "user" ? "Você" : "Expert"}
                 </span>
 
-                {message.type === "spending" ? (
-                  <SpendingSummary data={message.data} />
-                ) : message.type === "transactions" ? (
-                  <TransactionsTable data={message.data} />
+                {message.type === "accounts" ? (
+                 <AccountsSummary accounts={message.accounts} />
+                  ) : message.type === "spending" ? (
+                 <SpendingSummary data={message.data} />
+                  ) : message.type === "transactions" ? (
+                <TransactionsTable data={message.data} />
                 ) : (
-                  <p>{message.content}</p>
+                <p>{message.content}</p>
                 )}
               </article>
             ))}
