@@ -13,17 +13,26 @@ import {
   getAccounts,
   getSpending,
   getTransactions,
+  askQuestion,
 } from "./services/api.js";
 
+import AccountsSummary from "./components/AccountsSummary.jsx";
 import SpendingSummary from "./components/SpendingSummary.jsx";
 import TransactionsTable from "./components/TransactionsTable.jsx";
-import AccountsSummary from "./components/AccountsSummary.jsx";
 import "./App.css";
 
 const suggestions = [
-  { label: "Meu saldo", icon: Wallet },
-  { label: "Gastos por categoria", icon: ChartNoAxesCombined },
-  { label: "Últimas transações", icon: ArrowLeftRight },
+  { label: "Meu saldo", icon: Wallet, action: "accounts" },
+  {
+    label: "Gastos por categoria",
+    icon: ChartNoAxesCombined,
+    action: "spending",
+  },
+  {
+    label: "Últimas transações",
+    icon: ArrowLeftRight,
+    action: "transactions",
+  },
 ];
 
 function formatMoney(value, currency) {
@@ -70,7 +79,9 @@ export default function App() {
   const [messages, setMessages] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(false);
-    const messagesEndRef = useRef(null);
+  const [accountsLoaded, setAccountsLoaded] = useState(false);
+
+  const messagesEndRef = useRef(null);
 
   useEffect(() => {
     if (messages.length === 0) return;
@@ -80,9 +91,8 @@ export default function App() {
       block: "end",
     });
   }, [messages, loading]);
-  const [accountsLoaded, setAccountsLoaded] = useState(false);
 
-  async function sendMessage(text) {
+  async function sendMessage(text, action = "ai") {
     const content = text.trim();
     if (!content || loading) return;
 
@@ -91,75 +101,60 @@ export default function App() {
       ...previous,
       { role: "user", content },
     ]);
-
-    const normalized = content
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase();
-
-    const isTransactions = /transac|ultimas compras/.test(normalized);
-    const isSpending = /gast|categoria|saida/.test(normalized);
-    const isBalance = /saldo|contas?/.test(normalized);
-
-    if (!isTransactions && !isSpending && !isBalance) {
-      setMessages((previous) => [
-        ...previous,
-        {
-          role: "assistant",
-          content:
-            "Posso consultar saldos, gastos por categoria e últimas transações. Use uma das sugestões para começar. Esta versão ainda não usa IA.",
-        },
-      ]);
-      return;
-    }
-
     setLoading(true);
 
     try {
-      await initializeSandbox();
-
       let reply;
 
-      if (isTransactions) {
+      if (action === "ai") {
+        const result = await askQuestion(content);
+
         reply = {
           role: "assistant",
-          type: "transactions",
-          data: await getTransactions(),
-        };
-      } else if (isSpending) {
-        reply = {
-          role: "assistant",
-          type: "spending",
-          data: await getSpending(),
+          content: result.answer,
+          source: result.source,
         };
       } else {
-        const result = await getAccounts();
+        await initializeSandbox();
 
-        setAccounts(result.accounts);
-        setAccountsLoaded(true);
+        if (action === "accounts") {
+          const result = await getAccounts();
 
-        const summary = result.accounts
-          .map(
-            (account) =>
-              `${account.name}\n${describeAccount(account)}`
-          )
-          .join("\n\n");
+          setAccounts(result.accounts);
+          setAccountsLoaded(true);
 
-         reply = {
-          role: "assistant",
-          type: "accounts",
-          accounts: result.accounts,
-        };
+          reply = {
+            role: "assistant",
+            type: "accounts",
+            accounts: result.accounts,
+          };
+        } else if (action === "spending") {
+          reply = {
+            role: "assistant",
+            type: "spending",
+            data: await getSpending(),
+          };
+        } else if (action === "transactions") {
+          reply = {
+            role: "assistant",
+            type: "transactions",
+            data: await getTransactions(),
+          };
+        } else {
+          throw new Error("Consulta não reconhecida.");
+        }
       }
 
       setMessages((previous) => [...previous, reply]);
-    } catch {
+    } catch (error) {
       setMessages((previous) => [
         ...previous,
         {
           role: "assistant",
           content:
-            "Não consegui concluir a consulta. Confira se o backend está rodando. Se acabou de inicializar o Sandbox, aguarde alguns segundos e tente novamente.",
+            error instanceof TypeError
+              ? "Não consegui conectar ao servidor. Confira se o backend está rodando e tente novamente."
+              : error.message || "Não foi possível concluir a consulta.",
         },
       ]);
     } finally {
@@ -242,12 +237,12 @@ export default function App() {
           </section>
 
           <div className="suggestions">
-            {suggestions.map(({ label, icon: Icon }) => (
+            {suggestions.map(({ label, icon: Icon, action }) => (
               <button
                 key={label}
                 type="button"
                 disabled={loading}
-                onClick={() => sendMessage(label)}
+                onClick={() => sendMessage(label, action)}
               >
                 <Icon size={18} aria-hidden="true" />
                 {label}
@@ -272,22 +267,33 @@ export default function App() {
                 </span>
 
                 {message.type === "accounts" ? (
-                 <AccountsSummary accounts={message.accounts} />
-                  ) : message.type === "spending" ? (
-                 <SpendingSummary data={message.data} />
-                  ) : message.type === "transactions" ? (
-                <TransactionsTable data={message.data} />
+                  <AccountsSummary accounts={message.accounts} />
+                ) : message.type === "spending" ? (
+                  <SpendingSummary data={message.data} />
+                ) : message.type === "transactions" ? (
+                  <TransactionsTable data={message.data} />
                 ) : (
-                <p>{message.content}</p>
+                  <>
+                    <p>{message.content}</p>
+
+                    {message.source && (
+                      <div className="response-source">
+                        Fonte: {message.source} · Dados fictícios
+                        <br />
+                        Resposta gerada com Gemini.
+                      </div>
+                    )}
+                  </>
                 )}
               </article>
             ))}
 
             {loading && (
-              <p role="status">Consultando o Plaid Sandbox…</p>
+              <p role="status">Preparando sua resposta…</p>
             )}
+
+            <div ref={messagesEndRef} aria-hidden="true" />
           </section>
-          <div ref={messagesEndRef} aria-hidden="true" />
         </div>
 
         <footer className="composer">
@@ -302,6 +308,7 @@ export default function App() {
               onChange={(event) => setDraft(event.target.value)}
               placeholder="Pergunte sobre seus dados fictícios…"
               autoComplete="off"
+              maxLength={2000}
               disabled={loading}
             />
 
