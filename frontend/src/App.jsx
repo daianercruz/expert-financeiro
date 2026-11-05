@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Sparkles,
   MessageCircle,
@@ -69,6 +69,16 @@ export default function App() {
   const [messages, setMessages] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(false);
+    const messagesEndRef = useRef(null);
+
+  useEffect(() => {
+    if (messages.length === 0) return;
+
+    messagesEndRef.current?.scrollIntoView({
+      behavior: "auto",
+      block: "end",
+    });
+  }, [messages, loading]);
   const [accountsLoaded, setAccountsLoaded] = useState(false);
 
   async function sendMessage(text) {
@@ -275,6 +285,7 @@ export default function App() {
               <p role="status">Consultando o Plaid Sandbox…</p>
             )}
           </section>
+          <div ref={messagesEndRef} aria-hidden="true" />
         </div>
 
         <footer className="composer">
